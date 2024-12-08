@@ -1,12 +1,93 @@
 import sys
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QPushButton, QVBoxLayout, 
-                            QWidget, QFileDialog, QLabel, QTextEdit, QHBoxLayout)
-from PyQt6.QtCore import Qt
+                            QWidget, QFileDialog, QLabel, QTextEdit, QHBoxLayout,
+                            QSplashScreen, QProgressBar)
+from PyQt6.QtCore import Qt, QTimer
+from PyQt6.QtGui import QPixmap, QColor, QPainter, QFont
 # import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from counter import WordCounter
+
+class SplashScreen(QSplashScreen):
+    def __init__(self):
+        # Create a pixmap with proper dimensions
+        width = 600
+        height = 300
+        splash_pix = QPixmap(width, height)
+        splash_pix.fill(QColor("#2C3E50"))  # Fill the entire pixmap first
+        
+        # Start painting
+        painter = QPainter(splash_pix)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)  # Enable antialiasing
+        painter.setRenderHint(QPainter.RenderHint.TextAntialiasing)  # Enable text antialiasing
+        
+        # Add welcome message
+        welcome_font = QFont("Arial", 24)
+        welcome_font.setBold(True)
+        painter.setFont(welcome_font)
+        painter.setPen(QColor("#3498DB"))  # Light blue color for welcome message
+        welcome_rect = painter.drawText(0, 20, width, 40, Qt.AlignmentFlag.AlignCenter, "Welcome to")
+        
+        # Add title with a modern font
+        title_font = QFont("Arial", 48)
+        title_font.setBold(True)
+        painter.setFont(title_font)
+        painter.setPen(QColor("#FFFFFF"))  # Explicit white color
+        title_rect = painter.drawText(0, 60, width, 100, Qt.AlignmentFlag.AlignCenter, "Word Frequency Analyzer")
+        
+        # Add loading text
+        loading_font = QFont("Arial", 20)
+        loading_font.setBold(True)
+        painter.setFont(loading_font)
+        loading_rect = painter.drawText(0, 160, width, 40, Qt.AlignmentFlag.AlignCenter, "Loading...")
+        
+        # Finish painting
+        painter.end()
+        
+        # Initialize splash screen with the painted pixmap
+        super().__init__(splash_pix, Qt.WindowType.WindowStaysOnTopHint)
+        
+        # Add progress bar with a clean style
+        progress_width = int(width * 0.8)  # 80% of splash width
+        progress_height = 25
+        progress_x = (width - progress_width) // 2
+        progress_y = 210
+        
+        self.progress = QProgressBar(self)
+        self.progress.setGeometry(progress_x, progress_y, progress_width, progress_height)
+        self.progress.setStyleSheet("""
+            QProgressBar {
+                border: none;
+                border-radius: 12px;
+                text-align: center;
+                background-color: rgba(52, 73, 94, 0.5);
+                color: white;
+                font-size: 14px;
+                font-weight: bold;
+            }
+            QProgressBar::chunk {
+                background-color: #3498DB;
+                border-radius: 12px;
+            }
+        """)
+
+    def update_progress(self, value, message="Loading..."):
+        self.progress.setValue(value)
+        # Draw the message with proper font and color
+        self.showMessage(message, 
+                        Qt.AlignmentFlag.AlignBottom | Qt.AlignmentFlag.AlignHCenter, 
+                        QColor("#FFFFFF"))
+
+# Lazy imports - these will only be imported when needed
+def load_analysis_libraries():
+    global pd, sns, plt, FigureCanvas
+    import pandas as pd
+    import seaborn as sns
+    import matplotlib.pyplot as plt
+    from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+    return pd, sns, plt, FigureCanvas
 
 class WordFrequencyAnalyzer(QMainWindow):
     def __init__(self):
@@ -123,6 +204,44 @@ class WordFrequencyAnalyzer(QMainWindow):
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
+    
+    # Create and show splash screen
+    splash = SplashScreen()
+    splash.setWindowFlags(Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.FramelessWindowHint)
+    splash.show()
+    app.processEvents()  # Force the splash screen to be shown immediately
+    
+    # Move splash screen to center of screen
+    screen = app.primaryScreen().geometry()
+    splash_geometry = splash.geometry()
+    splash.move(
+        (screen.width() - splash_geometry.width()) // 2,
+        (screen.height() - splash_geometry.height()) // 2
+    )
+    
+    # Create main window but don't show it yet
     window = WordFrequencyAnalyzer()
-    window.show()
+    
+    # Simulate loading steps
+    def load_step(step):
+        steps = {
+            0: ("Initializing application...", 20),
+            1: ("Loading core components...", 40),
+            2: ("Preparing user interface...", 60),
+            3: ("Finalizing...", 80),
+            4: ("Ready!", 100)
+        }
+        
+        if step < len(steps):
+            message, progress = steps[step]
+            splash.update_progress(progress, message)
+            app.processEvents()  # Ensure the progress is displayed
+            QTimer.singleShot(500, lambda: load_step(step + 1))
+        else:
+            window.show()
+            splash.finish(window)
+    
+    # Start loading sequence
+    QTimer.singleShot(100, lambda: load_step(0))
+    
     sys.exit(app.exec())

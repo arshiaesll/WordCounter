@@ -2,9 +2,13 @@ name: Build Cross-Platform Executables
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
+      - feature/speed
   pull_request:
-    branches: [ main ]
+    branches:
+      - main
+      - feature/speed
 
 jobs:
   build:

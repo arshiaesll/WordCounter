@@ -48,7 +48,18 @@ jobs:
 
     - name: Build executable
       run: |
-        pyinstaller --onefile --windowed --name ${{ matrix.output_name }} gui.py
+        pyinstaller --onefile --windowed --name ${{ matrix.output_name }} \
+          --noupx \
+          --hidden-import=pandas._libs.tslibs.base \
+          --hidden-import=pandas._libs.tslibs.timedeltas \
+          --hidden-import=pandas._libs.tslibs.np_datetime \
+          --hidden-import=pandas._libs.tslibs.nattype \
+          --hidden-import=pandas._libs.tslibs.timestamps \
+          --collect-submodules=seaborn \
+          --clean \
+          --strip \
+          --noconfirm \
+          gui.py
     
     - name: Upload artifact
       uses: actions/upload-artifact@v4

@@ -1,4 +1,4 @@
-name: Build Windows Executable
+name: Build Cross-Platform Executables
 
 on:
   push:
@@ -8,7 +8,18 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+        include:
+          - os: windows-latest
+            output_name: WordFrequencyAnalyzer.exe
+          - os: macos-latest
+            output_name: WordFrequencyAnalyzer_mac
+          - os: ubuntu-latest
+            output_name: WordFrequencyAnalyzer_linux
+
+    runs-on: ${{ matrix.os }}
 
     steps:
     - uses: actions/checkout@v4
@@ -23,13 +34,19 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         pip install pyinstaller
-    
+
+    - name: Install Linux Dependencies
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y python3-dev python3-tk python3-qt6
+
     - name: Build executable
       run: |
-        pyinstaller --onefile --windowed --name WordFrequencyAnalyzer gui.py
+        pyinstaller --onefile --windowed --name ${{ matrix.output_name }} gui.py
     
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
-        name: WordFrequencyAnalyzer
-        path: dist/WordFrequencyAnalyzer.exe 
+        name: WordFrequencyAnalyzer-${{ matrix.os }}
+        path: dist/${{ matrix.output_name }}*

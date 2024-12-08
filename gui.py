@@ -119,6 +119,7 @@ class WordFrequencyAnalyzer(QMainWindow):
             
         except Exception as e:
             self.status_label.setText(f"Error: {str(e)}")
+            print(f"Error: {str(e)}")
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)

@@ -46,9 +46,16 @@ jobs:
         sudo apt-get install -y python3-dev python3-tk libxcb-xinerama0 libxcb-cursor0
         sudo apt-get install -y '^libxcb.*-dev' libx11-xcb-dev libglu1-mesa-dev libxrender-dev libxi-dev libxkbcommon-dev libxkbcommon-x11-dev
 
-    - name: Build executable
+    - name: Build executable (Windows)
+      if: matrix.os == 'windows-latest'
       run: |
-        pyinstaller --onefile --windowed --name ${{ matrix.output_name }} \
+        pyinstaller --onefile --windowed --name "${{ matrix.output_name }}" --noupx --hidden-import pandas._libs.tslibs.base --hidden-import pandas._libs.tslibs.timedeltas --hidden-import pandas._libs.tslibs.np_datetime --hidden-import pandas._libs.tslibs.nattype --hidden-import pandas._libs.tslibs.timestamps --collect-submodules seaborn --clean --strip --noconfirm gui.py
+      shell: cmd
+
+    - name: Build executable (Unix)
+      if: matrix.os != 'windows-latest'
+      run: |
+        pyinstaller --onefile --windowed --name "${{ matrix.output_name }}" \
           --noupx \
           --hidden-import=pandas._libs.tslibs.base \
           --hidden-import=pandas._libs.tslibs.timedeltas \
